@@ -11,7 +11,7 @@ on:
       MANIFEST_BRANCH:
         description: 'MANIFEST_BRANCH'
         required: true
-        default: 'android-13.0.0_r1'
+        default: 'android-12.0.0_r1'
       DEVICE_ARCH:
         description: 'DEVICE_ARCH'
         required: true
@@ -113,8 +113,8 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          workspace/out/target/product/generic/root/sbin/adbd
-          workspace/out/target/product/generic/system/bin/adbd
+          workspace/out/target/product/generic_arm64/root/sbin/adbd
+          workspace/out/target/product/generic_arm64/system/bin/adbd
         name: ${{ github.event.inputs.MANIFEST_BRANCH }}-${{ github.event.inputs.DEVICE_ARCH }}-${{ github.run_id }}
         tag_name: ${{ github.run_id }}
         body: |
@@ -126,4 +126,9 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: build
-        path: workspace/out/
+        path: workspace/out/target
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: build
+        path: workspace/packages/modules/adb
