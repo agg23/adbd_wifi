@@ -306,17 +306,17 @@ void local_init(int port) {
     // Host adbd.
     D("transport: local server init");
     std::thread(server_socket_thread, tcp_listen_inaddr_any, port).detach();
-    std::thread(server_socket_thread, vsock_listen, port).detach();
+    // std::thread(server_socket_thread, vsock_listen, port).detach();
 #else
     D("transport: local server init");
     // For the adbd daemon in the system image we need to distinguish
     // between the device, and the emulator.
-    if (use_qemu_goldfish()) {
-        std::thread(qemu_socket_thread, port).detach();
-    } else {
-        std::thread(server_socket_thread, tcp_listen_inaddr_any, port).detach();
-    }
-    std::thread(server_socket_thread, vsock_listen, port).detach();
+    // if (use_qemu_goldfish()) {
+    //     std::thread(qemu_socket_thread, port).detach();
+    // } else {
+    std::thread(server_socket_thread, tcp_listen_inaddr_any, port).detach();
+    // }
+    // std::thread(server_socket_thread, vsock_listen, port).detach();
 #endif // !ADB_HOST
 }
 
