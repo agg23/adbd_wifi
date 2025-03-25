@@ -290,11 +290,11 @@ int main(int argc, char** argv) {
         }
 
         switch (c) {
-#if defined(__ANDROID__)
-            case 's':
-                root_seclabel = optarg;
-                break;
-#endif
+// #if defined(__ANDROID__)
+//             case 's':
+//                 root_seclabel = optarg;
+//                 break;
+// #endif
             case 'b':
                 adb_device_banner = optarg;
                 break;
