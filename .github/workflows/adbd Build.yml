@@ -36,9 +36,6 @@ jobs:
         echo "Device Arch: ${{ github.event.inputs.DEVICE_ARCH }}"
         echo "::endgroup::"
  
-    # You might want to Checkout your repo first, but not mandatory
-    - name: Check Out
-      uses: actions/checkout@v3
     # Cleanup The Actions Workspace Using Custom Composite Run Actions
     - name: Cleanup
       uses: rokibhasansagar/slimhub_actions@main
@@ -96,6 +93,14 @@ jobs:
 #        # sudo ln -s /usr/bin/python3 /usr/bin/python3
 #      continue-on-error: true
 
+    - name: Remove default adbd code
+      run: |
+        rm -Rf workspace/system/core/adb
+
+    - name: Checkout
+      uses: actions/checkout@v3
+      path: workspace/system/core/adb
+
     - name: Tmate SSH - Customize your adbd
       if: ${{ inputs.DEBUG }}
       uses: mxschmitt/action-tmate@v3
@@ -128,5 +133,5 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: build
+        name: adb
         path: workspace/system/core/adb
