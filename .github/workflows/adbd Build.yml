@@ -108,9 +108,10 @@ jobs:
     
     - name: Building adbd
       run: |
+        export DISABLE_WERROR=true
+        export WERROR=
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
-        export DISABLE_WERROR=true
         lunch aosp_${{ github.event.inputs.DEVICE_ARCH }}-eng && make clean && make adbd -j$(nproc --all)
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
