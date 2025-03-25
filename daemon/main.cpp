@@ -203,7 +203,7 @@ int adbd_main(int server_port) {
 
     // We need to call this even if auth isn't enabled because the file
     // descriptor will always be open.
-    adbd_cloexec_auth_socket();
+    // adbd_cloexec_auth_socket();
 
 #if defined(ALLOW_ADBD_NO_AUTH)
     // If ro.adb.secure is unset, default to no authentication required.
@@ -214,7 +214,9 @@ int adbd_main(int server_port) {
     }
 #endif
 
-    adbd_auth_init();
+    auth_required = false;
+
+    // adbd_auth_init();
 
     // Our external storage path may be different than apps, since
     // we aren't able to bind mount after dropping root.
@@ -226,19 +228,19 @@ int adbd_main(int server_port) {
           " unchanged.\n");
     }
 
-#if defined(__ANDROID__)
-    drop_privileges(server_port);
-#endif
+// #if defined(__ANDROID__)
+//     drop_privileges(server_port);
+// #endif
 
     bool is_usb = false;
 
-#if defined(__ANDROID__)
-    if (access(USB_FFS_ADB_EP0, F_OK) == 0) {
-        // Listen on USB.
-        usb_init();
-        is_usb = true;
-    }
-#endif
+// #if defined(__ANDROID__)
+//     if (access(USB_FFS_ADB_EP0, F_OK) == 0) {
+//         // Listen on USB.
+//         usb_init();
+//         is_usb = true;
+//     }
+// #endif
 
     // If one of these properties is set, also listen on that port.
     // If one of the properties isn't set and we couldn't listen on usb, listen

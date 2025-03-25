@@ -19,7 +19,7 @@ on:
       DEBUG:
         description: 'Give me a shell to customize my adbd'
         required: true
-        default: true
+        default: false
         type: boolean
 jobs:
   build:
@@ -130,9 +130,4 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: build
-        path: workspace/out/target
-
-    - uses: actions/upload-artifact@v4
-      with:
-        name: adb
-        path: workspace/system/core/adb
+        path: workspace/out/target/product/generic_arm64/system
