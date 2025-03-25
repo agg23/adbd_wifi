@@ -19,6 +19,7 @@ cc_defaults {
         "-Wall",
         "-Wextra",
 //      "-Werror",
+        "-Wno-error",
         "-Wexit-time-destructors",
         "-Wno-unused-parameter",
         "-Wno-missing-field-initializers",

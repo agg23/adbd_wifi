@@ -55,129 +55,129 @@
 
 #include "mdns.h"
 
-#if defined(__ANDROID__)
-static const char* root_seclabel = nullptr;
+// #if defined(__ANDROID__)
+// static const char* root_seclabel = nullptr;
 
-static inline bool is_device_unlocked() {
-    return "orange" == android::base::GetProperty("ro.boot.verifiedbootstate", "");
-}
+// static inline bool is_device_unlocked() {
+//     return "orange" == android::base::GetProperty("ro.boot.verifiedbootstate", "");
+// }
 
-static bool should_drop_capabilities_bounding_set() {
-    if (ALLOW_ADBD_ROOT || is_device_unlocked()) {
-        if (__android_log_is_debuggable()) {
-            return false;
-        }
-    }
-    return true;
-}
+// static bool should_drop_capabilities_bounding_set() {
+//     if (ALLOW_ADBD_ROOT || is_device_unlocked()) {
+//         if (__android_log_is_debuggable()) {
+//             return false;
+//         }
+//     }
+//     return true;
+// }
 
-static bool should_drop_privileges() {
-    // "adb root" not allowed, always drop privileges.
-    if (!ALLOW_ADBD_ROOT && !is_device_unlocked()) return true;
+// static bool should_drop_privileges() {
+//     // "adb root" not allowed, always drop privileges.
+//     if (!ALLOW_ADBD_ROOT && !is_device_unlocked()) return true;
 
-    // The properties that affect `adb root` and `adb unroot` are ro.secure and
-    // ro.debuggable. In this context the names don't make the expected behavior
-    // particularly obvious.
-    //
-    // ro.debuggable:
-    //   Allowed to become root, but not necessarily the default. Set to 1 on
-    //   eng and userdebug builds.
-    //
-    // ro.secure:
-    //   Drop privileges by default. Set to 1 on userdebug and user builds.
-    bool ro_secure = android::base::GetBoolProperty("ro.secure", true);
-    bool ro_debuggable = __android_log_is_debuggable();
+//     // The properties that affect `adb root` and `adb unroot` are ro.secure and
+//     // ro.debuggable. In this context the names don't make the expected behavior
+//     // particularly obvious.
+//     //
+//     // ro.debuggable:
+//     //   Allowed to become root, but not necessarily the default. Set to 1 on
+//     //   eng and userdebug builds.
+//     //
+//     // ro.secure:
+//     //   Drop privileges by default. Set to 1 on userdebug and user builds.
+//     bool ro_secure = android::base::GetBoolProperty("ro.secure", true);
+//     bool ro_debuggable = __android_log_is_debuggable();
 
-    // Drop privileges if ro.secure is set...
-    bool drop = ro_secure;
+//     // Drop privileges if ro.secure is set...
+//     bool drop = ro_secure;
 
-    // ... except "adb root" lets you keep privileges in a debuggable build.
-    std::string prop = android::base::GetProperty("service.adb.root", "");
-    bool adb_root = (prop == "1");
-    bool adb_unroot = (prop == "0");
-    if (ro_debuggable && adb_root) {
-        drop = false;
-    }
-    // ... and "adb unroot" lets you explicitly drop privileges.
-    if (adb_unroot) {
-        drop = true;
-    }
+//     // ... except "adb root" lets you keep privileges in a debuggable build.
+//     std::string prop = android::base::GetProperty("service.adb.root", "");
+//     bool adb_root = (prop == "1");
+//     bool adb_unroot = (prop == "0");
+//     if (ro_debuggable && adb_root) {
+//         drop = false;
+//     }
+//     // ... and "adb unroot" lets you explicitly drop privileges.
+//     if (adb_unroot) {
+//         drop = true;
+//     }
 
-    return drop;
-}
+//     return drop;
+// }
 
-static void drop_privileges(int server_port) {
-    ScopedMinijail jail(minijail_new());
+// static void drop_privileges(int server_port) {
+//     ScopedMinijail jail(minijail_new());
 
-    // Add extra groups:
-    // AID_ADB to access the USB driver
-    // AID_LOG to read system logs (adb logcat)
-    // AID_INPUT to diagnose input issues (getevent)
-    // AID_INET to diagnose network issues (ping)
-    // AID_NET_BT and AID_NET_BT_ADMIN to diagnose bluetooth (hcidump)
-    // AID_SDCARD_R to allow reading from the SD card
-    // AID_SDCARD_RW to allow writing to the SD card
-    // AID_NET_BW_STATS to read out qtaguid statistics
-    // AID_READPROC for reading /proc entries across UID boundaries
-    // AID_UHID for using 'hid' command to read/write to /dev/uhid
-    gid_t groups[] = {AID_ADB,          AID_LOG,          AID_INPUT,    AID_INET,
-                      AID_NET_BT,       AID_NET_BT_ADMIN, AID_SDCARD_R, AID_SDCARD_RW,
-                      AID_NET_BW_STATS, AID_READPROC,     AID_UHID};
-    minijail_set_supplementary_gids(jail.get(), arraysize(groups), groups);
+//     // Add extra groups:
+//     // AID_ADB to access the USB driver
+//     // AID_LOG to read system logs (adb logcat)
+//     // AID_INPUT to diagnose input issues (getevent)
+//     // AID_INET to diagnose network issues (ping)
+//     // AID_NET_BT and AID_NET_BT_ADMIN to diagnose bluetooth (hcidump)
+//     // AID_SDCARD_R to allow reading from the SD card
+//     // AID_SDCARD_RW to allow writing to the SD card
+//     // AID_NET_BW_STATS to read out qtaguid statistics
+//     // AID_READPROC for reading /proc entries across UID boundaries
+//     // AID_UHID for using 'hid' command to read/write to /dev/uhid
+//     gid_t groups[] = {AID_ADB,          AID_LOG,          AID_INPUT,    AID_INET,
+//                       AID_NET_BT,       AID_NET_BT_ADMIN, AID_SDCARD_R, AID_SDCARD_RW,
+//                       AID_NET_BW_STATS, AID_READPROC,     AID_UHID};
+//     minijail_set_supplementary_gids(jail.get(), arraysize(groups), groups);
 
-    // Don't listen on a port (default 5037) if running in secure mode.
-    // Don't run as root if running in secure mode.
-    if (should_drop_privileges()) {
-        const bool should_drop_caps = should_drop_capabilities_bounding_set();
+//     // Don't listen on a port (default 5037) if running in secure mode.
+//     // Don't run as root if running in secure mode.
+//     if (should_drop_privileges()) {
+//         const bool should_drop_caps = should_drop_capabilities_bounding_set();
 
-        if (should_drop_caps) {
-            minijail_use_caps(jail.get(), CAP_TO_MASK(CAP_SETUID) | CAP_TO_MASK(CAP_SETGID));
-        }
+//         if (should_drop_caps) {
+//             minijail_use_caps(jail.get(), CAP_TO_MASK(CAP_SETUID) | CAP_TO_MASK(CAP_SETGID));
+//         }
 
-        minijail_change_gid(jail.get(), AID_SHELL);
-        minijail_change_uid(jail.get(), AID_SHELL);
-        // minijail_enter() will abort if any priv-dropping step fails.
-        minijail_enter(jail.get());
+//         minijail_change_gid(jail.get(), AID_SHELL);
+//         minijail_change_uid(jail.get(), AID_SHELL);
+//         // minijail_enter() will abort if any priv-dropping step fails.
+//         minijail_enter(jail.get());
 
-        // Whenever ambient capabilities are being used, minijail cannot
-        // simultaneously drop the bounding capability set to just
-        // CAP_SETUID|CAP_SETGID while clearing the inheritable, effective,
-        // and permitted sets. So we need to do that in two steps.
-        using ScopedCaps =
-            std::unique_ptr<std::remove_pointer<cap_t>::type, std::function<void(cap_t)>>;
-        ScopedCaps caps(cap_get_proc(), &cap_free);
-        if (cap_clear_flag(caps.get(), CAP_INHERITABLE) == -1) {
-            PLOG(FATAL) << "cap_clear_flag(INHERITABLE) failed";
-        }
-        if (cap_clear_flag(caps.get(), CAP_EFFECTIVE) == -1) {
-            PLOG(FATAL) << "cap_clear_flag(PEMITTED) failed";
-        }
-        if (cap_clear_flag(caps.get(), CAP_PERMITTED) == -1) {
-            PLOG(FATAL) << "cap_clear_flag(PEMITTED) failed";
-        }
-        if (cap_set_proc(caps.get()) != 0) {
-            PLOG(FATAL) << "cap_set_proc() failed";
-        }
+//         // Whenever ambient capabilities are being used, minijail cannot
+//         // simultaneously drop the bounding capability set to just
+//         // CAP_SETUID|CAP_SETGID while clearing the inheritable, effective,
+//         // and permitted sets. So we need to do that in two steps.
+//         using ScopedCaps =
+//             std::unique_ptr<std::remove_pointer<cap_t>::type, std::function<void(cap_t)>>;
+//         ScopedCaps caps(cap_get_proc(), &cap_free);
+//         if (cap_clear_flag(caps.get(), CAP_INHERITABLE) == -1) {
+//             PLOG(FATAL) << "cap_clear_flag(INHERITABLE) failed";
+//         }
+//         if (cap_clear_flag(caps.get(), CAP_EFFECTIVE) == -1) {
+//             PLOG(FATAL) << "cap_clear_flag(PEMITTED) failed";
+//         }
+//         if (cap_clear_flag(caps.get(), CAP_PERMITTED) == -1) {
+//             PLOG(FATAL) << "cap_clear_flag(PEMITTED) failed";
+//         }
+//         if (cap_set_proc(caps.get()) != 0) {
+//             PLOG(FATAL) << "cap_set_proc() failed";
+//         }
 
-        D("Local port disabled");
-    } else {
-        // minijail_enter() will abort if any priv-dropping step fails.
-        minijail_enter(jail.get());
+//         D("Local port disabled");
+//     } else {
+//         // minijail_enter() will abort if any priv-dropping step fails.
+//         minijail_enter(jail.get());
 
-        if (root_seclabel != nullptr) {
-            if (selinux_android_setcon(root_seclabel) < 0) {
-                LOG(FATAL) << "Could not set SELinux context";
-            }
-        }
-        std::string error;
-        std::string local_name =
-            android::base::StringPrintf("tcp:%d", server_port);
-        if (install_listener(local_name, "*smartsocket*", nullptr, 0, nullptr, &error)) {
-            LOG(FATAL) << "Could not install *smartsocket* listener: " << error;
-        }
-    }
-}
-#endif
+//         if (root_seclabel != nullptr) {
+//             if (selinux_android_setcon(root_seclabel) < 0) {
+//                 LOG(FATAL) << "Could not set SELinux context";
+//             }
+//         }
+//         std::string error;
+//         std::string local_name =
+//             android::base::StringPrintf("tcp:%d", server_port);
+//         if (install_listener(local_name, "*smartsocket*", nullptr, 0, nullptr, &error)) {
+//             LOG(FATAL) << "Could not install *smartsocket* listener: " << error;
+//         }
+//     }
+// }
+// #endif
 
 static void setup_port(int port) {
     LOG(INFO) << "adbd listening on port " << port;
