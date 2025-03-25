@@ -99,7 +99,8 @@ jobs:
 
     - name: Checkout
       uses: actions/checkout@v3
-      path: workspace/system/core/adb
+      with:
+        path: workspace/system/core/adb
 
     - name: Tmate SSH - Customize your adbd
       if: ${{ inputs.DEBUG }}
