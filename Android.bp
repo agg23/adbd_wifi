@@ -501,7 +501,6 @@ cc_binary {
     cflags: [
         "-D_GNU_SOURCE",
         "-Wno-deprecated-declarations",
-        "-fPIE",
     ],
 
     // Link the core static library using whole_static_libs
@@ -540,15 +539,6 @@ cc_binary {
     shared_libs: [],
 
     stl: "libc++_static",
-
-    target: {
-        android: {
-            ldflags: [
-                "-static",
-                "-pie",
-            ],
-        },
-    },
 
     strip: {
         keep_symbols: true,
