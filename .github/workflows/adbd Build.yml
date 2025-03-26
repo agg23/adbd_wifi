@@ -125,6 +125,7 @@ jobs:
         working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
       - name: Output link command
+        if: always()
         run: |
           source build/envsetup.sh
           ninja -t commands out/target/product/generic_arm64/system/bin/adbd

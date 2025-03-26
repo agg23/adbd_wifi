@@ -547,8 +547,8 @@ cc_binary {
                 "-pie",
                 "-nostdlib", // Override Soong's -nostdlib with our own
                 // Use available CRT files from GCC 4.9
-                "-Wl," + rebase_path("prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/lib/gcc/aarch64-linux-android/4.9.x/crtbeginT.o"),
-                "-Wl," + rebase_path("prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/lib/gcc/aarch64-linux-android/4.9.x/crtend.o"),
+                "-Wl,prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/lib/gcc/aarch64-linux-android/4.9.x/crtbeginT.o",
+                "-Wl,prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/lib/gcc/aarch64-linux-android/4.9.x/crtend.o",
                 "-Wl,--start-group",
                 "-lc",       // Explicitly link static libc
                 "-lm",       // Explicitly link static libm
