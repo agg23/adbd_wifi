@@ -323,7 +323,7 @@ cc_binary_host {
 // libadbd_core contains the common sources to build libadbd and libadbd_services.
 cc_library_static {
     name: "libadbd_core",
-    defaults: ["adbd_defaults", "host_adbd_supported"],
+    defaults: ["adbd_defaults"],
     recovery_available: true,
 
     // libminadbd wants both, as it's used to build native tests.
@@ -375,10 +375,9 @@ cc_library_static {
 
 cc_library_static {
     name: "libadbd_services",
-    defaults: ["adbd_defaults", "host_adbd_supported"],
+    defaults: ["adbd_defaults"],
     recovery_available: true,
     compile_multilib: "both",
-    static_executable: true,
 
     srcs: [
         "daemon/file_sync_service.cpp",
@@ -397,14 +396,14 @@ cc_library_static {
         "libdiagnose_usb",
     ],
 
-    shared_libs: [
-        "libasyncio",
-        "libbase",
-        "libcrypto",
-        "libcrypto_utils",
-        "libcutils",
-        "liblog",
-    ],
+//    shared_libs: [
+//        "libasyncio",
+//        "libbase",
+//        "libcrypto",
+//        "libcrypto_utils",
+//        "libcutils",
+//        "liblog",
+//    ],
 
     product_variables: {
         debuggable: {
@@ -447,9 +446,8 @@ cc_library_static {
 
 cc_library_static {
     name: "libadbd",
-    defaults: ["adbd_defaults", "host_adbd_supported"],
+    defaults: ["adbd_defaults"],
     recovery_available: true,
-    static_executable: true,
 
     // Avoid getting duplicate symbol of android::build::GetBuildNumber().
     use_version_lib: false,
@@ -462,14 +460,18 @@ cc_library_static {
         "libadbd_core",
     ],
 
-    shared_libs: [
-        "libadbd_services",
-        "libasyncio",
-        "libbase",
-        "libcrypto",
-        "libcrypto_utils",
-        "libcutils",
-        "liblog",
+//    shared_libs: [
+//        "libadbd_services",
+//        "libasyncio",
+//        "libbase",
+//        "libcrypto",
+//        "libcrypto_utils",
+//        "libcutils",
+//        "liblog",
+//    ],
+
+    static_libs: [
+         "libadbd_services", // Now depends on the static version
     ],
 
     export_include_dirs: [
@@ -479,9 +481,8 @@ cc_library_static {
 
 cc_binary {
     name: "adbd",
-    defaults: ["adbd_defaults", "host_adbd_supported"],
+    defaults: ["adbd_defaults"],
     recovery_available: true,
-    static_executable: true,
 
     srcs: [
         "daemon/main.cpp",
@@ -496,9 +497,11 @@ cc_binary {
         keep_symbols: true,
     },
 
+    whole_static_libs: [
+        "libadbd"
+    ],
+
     static_libs: [
-        "libadbd",
-        "libadbd_services",
         "libbase",
         "libcap",
         "libcrypto",
@@ -506,7 +509,37 @@ cc_binary {
         "liblog",
         "libminijail",
         "libselinux",
+
+        // From libadbd_services shared_libs (now needed statically):
+        "libasyncio", // Make sure static version exists for device target
+        "libcrypto_utils", // Make sure static version exists for device target
+        "libbootloader_message", // Make sure static version exists for device target
+        "libmdnssd",             // Make sure static version exists for device target
+        "libext4_utils",         // Make sure static version exists for device target
+        "libfec",                // Make sure static version exists for device target
+        "libfs_mgr",             // Make sure static version exists for device target
+        // libselinux already listed
+        // libbase, libcrypto, libcutils, liblog already listed
+
+        // From libadbd shared_libs (now needed statically):
+        // libasyncio, libbase, libcrypto, libcrypto_utils, libcutils, liblog already listed
+
+        // From libadbd_core static_libs & whole_static_libs (via libadbd):
+        "libdiagnose_usb", // Make sure static version exists for device target
+        "libqemu_pipe",    // From libadbd_core android target
+
+        // From libadbd_services static_libs (via libadbd)
+        "libavb_user",     // Make sure static version exists for device target
     ],
+
+    // Add the static flag specifically for the Android target
+    target: {
+        android: {
+            ldflags: [
+                "-static",
+            ],
+        },
+    },
 }
 
 cc_binary {
