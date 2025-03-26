@@ -373,11 +373,12 @@ cc_library_static {
     },
 }
 
-cc_library {
+cc_library_static {
     name: "libadbd_services",
     defaults: ["adbd_defaults", "host_adbd_supported"],
     recovery_available: true,
     compile_multilib: "both",
+    static_executable: true,
 
     srcs: [
         "daemon/file_sync_service.cpp",
@@ -444,10 +445,11 @@ cc_library {
     },
 }
 
-cc_library {
+cc_library_static {
     name: "libadbd",
     defaults: ["adbd_defaults", "host_adbd_supported"],
     recovery_available: true,
+    static_executable: true,
 
     // Avoid getting duplicate symbol of android::build::GetBuildNumber().
     use_version_lib: false,
@@ -494,7 +496,7 @@ cc_binary {
         keep_symbols: true,
     },
 
-    shared_libs: [
+    static_libs: [
         "libadbd",
         "libadbd_services",
         "libbase",
