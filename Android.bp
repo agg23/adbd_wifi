@@ -536,6 +536,13 @@ cc_binary {
         "libcap",
         "libminijail",
         // libselinux, libbase, libcrypto, libcutils, liblog already covered
+
+        libfs_mgr (and their dependencies):
+        "liblp",
+        "libsparse",           // For liblp
+        "protobuf-cpp-lite", // For liblp (ensure static variant exists)
+        "libgsi",              // For liblp (ensure static variant exists)
+        "libz",                // For liblp & libsparse
     ],
 
     // Explicitly no shared libraries
