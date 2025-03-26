@@ -540,6 +540,8 @@ cc_binary {
     // Explicitly no shared libraries
     shared_libs: [],
 
+    stl: "libc++_static",
+
     // Add the static flag specifically for the Android target
     target: {
         android: {
