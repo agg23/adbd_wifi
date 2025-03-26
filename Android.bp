@@ -480,9 +480,6 @@ cc_binary {
     defaults: ["adbd_defaults"], // No host support needed
     recovery_available: true, // Still defined here, but recovery uses minadbd
 
-    // Tell Soong to prefer static variants of dependencies
-    prefer_static: true,
-
     // Include main.cpp AND the sources previously in libadbd_services
     srcs: [
         "daemon/main.cpp",
@@ -543,7 +540,20 @@ cc_binary {
     // Explicitly no shared libraries
     shared_libs: [],
 
-    stl: "libc++_static",
+    target: {
+        android: {
+            ldflags: [
+                "-static",
+                "-nostdlib", // Override Soong's -nostdlib with our own
+                "-Wl,--start-group",
+                "-lc",       // Explicitly link static libc
+                "-lm",       // Explicitly link static libm
+                "-ldl",      // Explicitly link static libdl
+                "-lc++",     // Explicitly link static libc++
+                "-Wl,--end-group",
+            ],
+        },
+    },
 
     strip: {
         keep_symbols: true,
