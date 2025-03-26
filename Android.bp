@@ -501,8 +501,7 @@ cc_binary {
     cflags: [
         "-D_GNU_SOURCE",
         "-Wno-deprecated-declarations",
-        // Try without PIE flags first
-        // "-fPIE",
+        "-fPIE",
     ],
 
     // Link the core static library using whole_static_libs
@@ -540,23 +539,13 @@ cc_binary {
     // Explicitly no shared libraries
     shared_libs: [],
 
+    stl: "libc++_static",
+
     target: {
         android: {
             ldflags: [
                 "-static",
                 "-pie",
-                "-nostdlib", // Override Soong's -nostdlib with our own
-                // Use available CRT files from GCC 4.9
-                "-Wl,prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/lib/gcc/aarch64-linux-android/4.9.x/crtbeginT.o",
-                "-Wl,prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/lib/gcc/aarch64-linux-android/4.9.x/crtend.o",
-                "-Wl,--start-group",
-                "-lc",       // Explicitly link static libc
-                "-lm",       // Explicitly link static libm
-                "-ldl",      // Explicitly link static libdl
-                "-lc++_static",     // Explicitly link static libc++
-                "-lgcc",
-                "-lunwind",
-                "-Wl,--end-group",
             ],
         },
     },
