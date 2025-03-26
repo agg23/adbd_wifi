@@ -373,7 +373,7 @@ cc_library_static {
     },
 }
 
-cc_library_static {
+cc_library {
     name: "libadbd_services",
     defaults: ["adbd_defaults"],
     recovery_available: true,
@@ -396,14 +396,14 @@ cc_library_static {
         "libdiagnose_usb",
     ],
 
-//    shared_libs: [
-//        "libasyncio",
-//        "libbase",
-//        "libcrypto",
-//        "libcrypto_utils",
-//        "libcutils",
-//        "liblog",
-//    ],
+    shared_libs: [
+        "libasyncio",
+        "libbase",
+        "libcrypto",
+        "libcrypto_utils",
+        "libcutils",
+        "liblog",
+    ],
 
     product_variables: {
         debuggable: {
@@ -444,7 +444,7 @@ cc_library_static {
     },
 }
 
-cc_library_static {
+cc_library {
     name: "libadbd",
     defaults: ["adbd_defaults"],
     recovery_available: true,
@@ -460,18 +460,14 @@ cc_library_static {
         "libadbd_core",
     ],
 
-//    shared_libs: [
-//        "libadbd_services",
-//        "libasyncio",
-//        "libbase",
-//        "libcrypto",
-//        "libcrypto_utils",
-//        "libcutils",
-//        "liblog",
-//    ],
-
-    static_libs: [
-         "libadbd_services", // Now depends on the static version
+    shared_libs: [
+        "libadbd_services",
+        "libasyncio",
+        "libbase",
+        "libcrypto",
+        "libcrypto_utils",
+        "libcutils",
+        "liblog",
     ],
 
     export_include_dirs: [
@@ -481,62 +477,89 @@ cc_library_static {
 
 cc_binary {
     name: "adbd",
-    defaults: ["adbd_defaults"],
-    recovery_available: true,
+    defaults: ["adbd_defaults"], // No host support needed
+    recovery_available: true, // Still defined here, but recovery uses minadbd
 
+    // Include main.cpp AND the sources previously in libadbd_services
     srcs: [
         "daemon/main.cpp",
+        // Sources from libadbd_services:
+        "daemon/file_sync_service.cpp",
+        "daemon/services.cpp", // Overlaps with services.cpp in libadb_srcs, check if needed or causes conflict. If conflict, remove this line.
+        "daemon/shell_service.cpp",
+        "shell_service_protocol.cpp",
+        // Android specific sources from libadbd_services:
+        "daemon/abb_service.cpp",
+        "daemon/framebuffer_service.cpp",
+        "daemon/mdns.cpp",
+        "daemon/reboot_service.cpp",
+        "daemon/remount_service.cpp",
+        "daemon/restart_service.cpp",
+        "daemon/set_verity_enable_state_service.cpp",
     ],
 
     cflags: [
         "-D_GNU_SOURCE",
         "-Wno-deprecated-declarations",
+        // Try without PIE flags first
+        // "-fPIE",
     ],
 
-    strip: {
-        keep_symbols: true,
-    },
-
+    // Link the core static library using whole_static_libs
     whole_static_libs: [
-        "libadbd"
+        "libadbd_core", // Contains transport, auth, trace etc.
     ],
 
+    // Consolidate ALL static dependencies needed by srcs and libadbd_core
     static_libs: [
+        // Dependencies previously needed by shared libs:
+        "libasyncio",
         "libbase",
-        "libcap",
         "libcrypto",
+        "libcrypto_utils",
         "libcutils",
         "liblog",
+        "libbootloader_message",
+        "libmdnssd",
+        "libext4_utils",
+        "libfec",
+        "libfs_mgr",
+        "libselinux", // Needed by services and adbd itself
+
+        // Dependencies from libadbd_core & libadbd_services static_libs:
+        "libdiagnose_usb",
+        "libqemu_pipe",     // android target specific for libadbd_core
+        "libavb_user",      // android target specific for libadbd_services
+
+        // Original adbd static dependencies:
+        "libcap",
         "libminijail",
-        "libselinux",
-
-        // From libadbd_services shared_libs (now needed statically):
-        "libasyncio", // Make sure static version exists for device target
-        "libcrypto_utils", // Make sure static version exists for device target
-        "libbootloader_message", // Make sure static version exists for device target
-        "libmdnssd",             // Make sure static version exists for device target
-        "libext4_utils",         // Make sure static version exists for device target
-        "libfec",                // Make sure static version exists for device target
-        "libfs_mgr",             // Make sure static version exists for device target
-        // libselinux already listed
-        // libbase, libcrypto, libcutils, liblog already listed
-
-        // From libadbd shared_libs (now needed statically):
-        // libasyncio, libbase, libcrypto, libcrypto_utils, libcutils, liblog already listed
-
-        // From libadbd_core static_libs & whole_static_libs (via libadbd):
-        "libdiagnose_usb", // Make sure static version exists for device target
-        "libqemu_pipe",    // From libadbd_core android target
-
-        // From libadbd_services static_libs (via libadbd)
-        "libavb_user",     // Make sure static version exists for device target
+        // libselinux, libbase, libcrypto, libcutils, liblog already covered
     ],
+
+    // Explicitly no shared libraries
+    shared_libs: [],
 
     // Add the static flag specifically for the Android target
     target: {
         android: {
             ldflags: [
                 "-static",
+                // Try without PIE flags first
+                // "-pie",
+            ],
+        },
+    },
+
+    strip: {
+        keep_symbols: true,
+    },
+
+    // Handle product variable requirement from libadbd_services directly
+    product_variables: {
+        debuggable: {
+            required: [
+                "remount",
             ],
         },
     },
