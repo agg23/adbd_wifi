@@ -480,6 +480,9 @@ cc_binary {
     defaults: ["adbd_defaults"], // No host support needed
     recovery_available: true, // Still defined here, but recovery uses minadbd
 
+    // Prevent double linking of libbuildversion
+    use_version_lib: false,
+
     // Include main.cpp AND the sources previously in libadbd_services
     srcs: [
         "daemon/main.cpp",
