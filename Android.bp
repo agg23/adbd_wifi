@@ -480,6 +480,9 @@ cc_binary {
     defaults: ["adbd_defaults"], // No host support needed
     recovery_available: true, // Still defined here, but recovery uses minadbd
 
+    // Tell Soong to prefer static variants of dependencies
+    prefer_static: true,
+
     // Include main.cpp AND the sources previously in libadbd_services
     srcs: [
         "daemon/main.cpp",
@@ -541,17 +544,6 @@ cc_binary {
     shared_libs: [],
 
     stl: "libc++_static",
-
-    // Add the static flag specifically for the Android target
-    target: {
-        android: {
-            ldflags: [
-                "-static",
-                // Try without PIE flags first
-                // "-pie",
-            ],
-        },
-    },
 
     strip: {
         keep_symbols: true,
