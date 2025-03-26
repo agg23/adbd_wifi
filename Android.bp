@@ -479,6 +479,7 @@ cc_binary {
     name: "adbd",
     defaults: ["adbd_defaults", "host_adbd_supported"],
     recovery_available: true,
+    static_executable: true,
 
     srcs: [
         "daemon/main.cpp",
