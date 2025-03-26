@@ -182,9 +182,9 @@
 static void setup_port(int port) {
     LOG(INFO) << "adbd listening on port " << port;
     local_init(port);
-#if defined(__ANDROID__)
-    setup_mdns(port);
-#endif
+// #if defined(__ANDROID__)
+//     setup_mdns(port);
+// #endif
 }
 
 int adbd_main(int server_port) {

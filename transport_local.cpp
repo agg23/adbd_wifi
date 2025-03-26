@@ -250,6 +250,7 @@ static void client_socket_thread(int) {
 
 void server_socket_thread(std::function<unique_fd(int, std::string*)> listen_func, int port) {
     adb_thread_setname("server socket");
+    LOG(INFO) << "server socket";
 
     unique_fd serverfd;
     std::string error;
@@ -259,9 +260,11 @@ void server_socket_thread(std::function<unique_fd(int, std::string*)> listen_fun
         serverfd = listen_func(port, &error);
         if (errno == EAFNOSUPPORT || errno == EINVAL || errno == EPROTONOSUPPORT) {
             D("unrecoverable error: '%s'", error.c_str());
+            LOG(INFO) << "unrecoverable error " << error.c_str();
             return;
         } else if (serverfd < 0) {
             D("server: cannot bind socket yet: %s", error.c_str());
+            LOG(INFO) << "unrecoverable error " << error.c_str();
             std::this_thread::sleep_for(1s);
             continue;
         }
@@ -273,6 +276,7 @@ void server_socket_thread(std::function<unique_fd(int, std::string*)> listen_fun
         unique_fd fd(adb_socket_accept(serverfd, nullptr, nullptr));
         if (fd >= 0) {
             D("server: new connection on fd %d", fd.get());
+            LOG(INFO) << "server: new connection on fd " << fd.get();
             close_on_exec(fd.get());
             disable_tcp_nagle(fd.get());
             std::string serial = android::base::StringPrintf("host-%d", fd.get());
@@ -281,6 +285,7 @@ void server_socket_thread(std::function<unique_fd(int, std::string*)> listen_fun
         }
     }
     D("transport: server_socket_thread() exiting");
+    LOG(INFO) << "transport: server_socket_thread() exiting";
 }
 
 #endif
@@ -300,11 +305,13 @@ static unique_fd vsock_listen(int port, std::string* error) {
 void local_init(int port) {
 #if ADB_HOST
     D("transport: local client init");
+    LOG(INFO) << "transport: local client init";
     std::thread(client_socket_thread, port).detach();
     adb_local_transport_max_port_env_override();
 #elif !defined(__ANDROID__)
     // Host adbd.
     D("transport: local server init");
+    LOG(INFO) << "transport: local client init";
     std::thread(server_socket_thread, tcp_listen_inaddr_any, port).detach();
     // std::thread(server_socket_thread, vsock_listen, port).detach();
 #else
@@ -314,6 +321,7 @@ void local_init(int port) {
     // if (use_qemu_goldfish()) {
     //     std::thread(qemu_socket_thread, port).detach();
     // } else {
+    LOG(INFO) << "transport: local client init";
     std::thread(server_socket_thread, tcp_listen_inaddr_any, port).detach();
     // }
     // std::thread(server_socket_thread, vsock_listen, port).detach();
