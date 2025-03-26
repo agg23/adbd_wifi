@@ -514,6 +514,7 @@ void fdevent_loop() {
         }
 
         D("--- --- waiting for events");
+        LOG(INFO) << "--- --- waiting for events";
 
         fdevent_process();
 

@@ -180,8 +180,9 @@
 // #endif
 
 static void setup_port(int port) {
-    LOG(INFO) << "adbd listening on port " << port;
+    LOG(INFO) << "opening port " << port;
     local_init(port);
+    LOG(INFO) << "adbd listening on port " << port;
 // #if defined(__ANDROID__)
 //     setup_mdns(port);
 // #endif
@@ -261,8 +262,10 @@ int adbd_main(int server_port) {
     }
 
     D("adbd_main(): pre init_jdwp()");
+    LOG(INFO) << "adbd_main(): pre init_jdwp()";
     init_jdwp();
     D("adbd_main(): post init_jdwp()");
+    LOG(INFO) << "adbd_main(): post init_jdwp()";
 
     D("Event loop starting");
     fdevent_loop();
