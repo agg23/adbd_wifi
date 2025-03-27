@@ -108,7 +108,7 @@ jobs:
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           lunch aosp_${{ github.event.inputs.DEVICE_ARCH }}-eng && make clean && make adbd -j$(nproc --all)
-          mv workspace/out/target/product/generic_arm64/system/bin/adbd workspace/out/target/product/generic_arm64/system/bin/adbd_wifi
+          mv out/target/product/generic_arm64/system/bin/adbd out/target/product/generic_arm64/system/bin/adbd_wifi
         working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
       - name: Upload to draft release
