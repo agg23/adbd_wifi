@@ -115,7 +115,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            workspace/out/target/product/generic_arm64/system/bin/adbd
+            workspace/out/target/product/generic_arm64/system/bin/adbd_wifi
           name: ${{ github.event.inputs.MANIFEST_BRANCH }}-${{ github.event.inputs.DEVICE_ARCH }}-${{ github.run_id }}
           tag_name: ${{ github.run_id }}
           draft: true
