@@ -537,7 +537,7 @@ cc_binary {
         "libminijail",
         // libselinux, libbase, libcrypto, libcutils, liblog already covered
 
-        libfs_mgr (and their dependencies):
+        // libfs_mgr (and their dependencies):
         "liblp",
         "libsparse",           // For liblp
         "protobuf-cpp-lite", // For liblp (ensure static variant exists)
