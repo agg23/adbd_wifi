@@ -540,7 +540,7 @@ cc_binary {
         // libfs_mgr (and their dependencies):
         "liblp",
         "libsparse",           // For liblp
-        "protobuf-cpp-lite", // For liblp (ensure static variant exists)
+        "libprotobuf-cpp-lite",// For liblp
         "libgsi",              // For liblp (ensure static variant exists)
         "libz",                // For liblp & libsparse
     ],
