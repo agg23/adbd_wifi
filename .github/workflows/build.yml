@@ -93,6 +93,10 @@ jobs:
         with:
           path: workspace/system/core/adb
 
+      - name: Move ADB source
+        run: |
+          mv src/* .
+
       - name: Tmate SSH - Customize your adbd
         if: ${{ inputs.DEBUG }}
         uses: mxschmitt/action-tmate@v3
@@ -104,13 +108,13 @@ jobs:
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           lunch aosp_${{ github.event.inputs.DEVICE_ARCH }}-eng && make clean && make adbd -j$(nproc --all)
+          mv workspace/out/target/product/generic_arm64/system/bin/adbd workspace/out/target/product/generic_arm64/system/bin/adbd_wifi
         working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
       - name: Upload to draft release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            workspace/out/target/product/generic_arm64/root/sbin/adbd
             workspace/out/target/product/generic_arm64/system/bin/adbd
           name: ${{ github.event.inputs.MANIFEST_BRANCH }}-${{ github.event.inputs.DEVICE_ARCH }}-${{ github.run_id }}
           tag_name: ${{ github.run_id }}
