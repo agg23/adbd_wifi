@@ -95,7 +95,7 @@ jobs:
 
       - name: Move ADB source
         run: |
-          mv src/* .
+          mv workspace/system/core/adb/src/* workspace/system/core/adb/
 
       - name: Tmate SSH - Customize your adbd
         if: ${{ inputs.DEBUG }}
