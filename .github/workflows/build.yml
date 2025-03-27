@@ -21,6 +21,7 @@ on:
         required: true
         default: false
         type: boolean
+
 jobs:
   build:
     if: github.event.repository.owner.id == github.event.sender.id
@@ -28,7 +29,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Display Run Parameters
+      - name: Display run parameters
         run: |
           echo "::group::User Environment Variables"
           echo "Manifest URL: ${{ github.event.inputs.MANIFEST_URL }}"
@@ -36,16 +37,8 @@ jobs:
           echo "Device Arch: ${{ github.event.inputs.DEVICE_ARCH }}"
           echo "::endgroup::"
 
-      - name: Print free space
-        run: df -h
-
-      # Cleanup The Actions Workspace Using Custom Composite Run Actions
-      - name: Cleanup
+      - name: Free up space on runner
         uses: rokibhasansagar/slimhub_actions@main
-        # That's it! Now use your normal steps
-
-      - name: Print free space
-        run: df -h
 
       - name: Prepare the environment
         run: |
@@ -86,21 +79,10 @@ jobs:
           repo sync -j$(nproc --all) --force-sync
         working-directory: workspace
 
-      - name: Print free space
-        run: df -h
-
       - name: Set Swap Space
         uses: pierotofy/set-swap-space@master
         with:
           swap-size-gb: 12
-
-      #    - name: Switch to Python2
-      #      run: |
-      #        sudo apt -y install python
-      #        sudo rm -rf /usr/bin/python
-      #        sudo ln -s /usr/bin/python2 /usr/bin/python
-      #        # sudo ln -s /usr/bin/python3 /usr/bin/python3
-      #      continue-on-error: true
 
       - name: Remove default adbd code
         run: |
@@ -124,7 +106,7 @@ jobs:
           lunch aosp_${{ github.event.inputs.DEVICE_ARCH }}-eng && make clean && make adbd -j$(nproc --all)
         working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
-      - name: Upload to Release
+      - name: Upload to draft release
         uses: softprops/action-gh-release@v2
         with:
           files: |
@@ -132,21 +114,9 @@ jobs:
             workspace/out/target/product/generic_arm64/system/bin/adbd
           name: ${{ github.event.inputs.MANIFEST_BRANCH }}-${{ github.event.inputs.DEVICE_ARCH }}-${{ github.run_id }}
           tag_name: ${{ github.run_id }}
+          draft: true
           body: |
             Manifest: ${{ github.event.inputs.MANIFEST_BRANCH }}
             Arch: ${{ github.event.inputs.DEVICE_ARCH }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload build folder
-        uses: actions/upload-artifact@v4
-        with:
-          name: build
-          path: workspace/out/target/product/generic_arm64/system
-
-      - name: Upload all output
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: intermediates
-          path: workspace/out
