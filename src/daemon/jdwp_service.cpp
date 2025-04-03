@@ -161,9 +161,9 @@ struct JdwpProcess {
 
     void RemoveFromList() {
         if (this->pid >= 0) {
-            LOG(INFO) << D("removing pid %d from jdwp process list", this->pid);
+            D("removing pid %d from jdwp process list", this->pid);
         } else {
-            LOG(INFO) << D("removing transient JdwpProcess from list");
+            D("removing transient JdwpProcess from list");
         }
 
         auto pred = [this](const auto& proc) { return proc.get() == this; };
@@ -188,7 +188,7 @@ static size_t jdwp_process_list(char* buffer, size_t bufferlen) {
 
         std::string next = std::to_string(proc->pid) + "\n";
         if (temp.length() + next.length() > bufferlen) {
-            LOG(INFO) << D("truncating JDWP process list (max len = %zu)", bufferlen);
+            D("truncating JDWP process list (max len = %zu)", bufferlen);
             break;
         }
         temp.append(next);
@@ -220,31 +220,31 @@ static void jdwp_process_event(int socket, unsigned events, void* _proc) {
         if (proc->pid < 0) {
             ssize_t rc = TEMP_FAILURE_RETRY(recv(socket, &proc->pid, sizeof(proc->pid), 0));
             if (rc != sizeof(proc->pid)) {
-                LOG(INFO) << D("failed to read jdwp pid: rc = %zd, errno = %s", rc, strerror(errno));
+                D("failed to read jdwp pid: rc = %zd, errno = %s", rc, strerror(errno));
                 goto CloseProcess;
             }
 
             /* all is well, keep reading to detect connection closure */
-            LOG(INFO) << D("Adding pid %d to jdwp process list", proc->pid);
+            D("Adding pid %d to jdwp process list", proc->pid);
             jdwp_process_list_updated();
         } else {
             // We already have the PID, if we can read from the socket, we've probably hit EOF.
-            LOG(INFO) << D("terminating JDWP connection %d", proc->pid);
+            D("terminating JDWP connection %d", proc->pid);
             goto CloseProcess;
         }
     }
 
     if (events & FDE_WRITE) {
-        LOG(INFO) << D("trying to send fd to JDWP process (count = %zu)", proc->out_fds.size());
+        D("trying to send fd to JDWP process (count = %zu)", proc->out_fds.size());
         CHECK(!proc->out_fds.empty());
 
         int fd = proc->out_fds.back().get();
         if (android::base::SendFileDescriptors(socket, "", 1, fd) != 1) {
-            LOG(INFO) << D("sending new file descriptor to JDWP %d failed: %s", proc->pid, strerror(errno));
+            D("sending new file descriptor to JDWP %d failed: %s", proc->pid, strerror(errno));
             goto CloseProcess;
         }
 
-        LOG(INFO) << D("sent file descriptor %d to JDWP process %d", fd, proc->pid);
+        D("sent file descriptor %d to JDWP process %d", fd, proc->pid);
 
         proc->out_fds.pop_back();
         if (proc->out_fds.empty()) {
@@ -260,17 +260,17 @@ CloseProcess:
 }
 
 unique_fd create_jdwp_connection_fd(int pid) {
-    LOG(INFO) << D("looking for pid %d in JDWP process list", pid);
+    D("looking for pid %d in JDWP process list", pid);
 
     for (auto& proc : _jdwp_list) {
         if (proc->pid == pid) {
             int fds[2];
 
             if (adb_socketpair(fds) < 0) {
-                LOG(INFO) << D("%s: socket pair creation failed: %s", __FUNCTION__, strerror(errno));
+                D("%s: socket pair creation failed: %s", __FUNCTION__, strerror(errno));
                 return unique_fd{};
             }
-            LOG(INFO) << D("socketpair: (%d,%d)", fds[0], fds[1]);
+            D("socketpair: (%d,%d)", fds[0], fds[1]);
 
             proc->out_fds.emplace_back(fds[1]);
             if (proc->out_fds.size() == 1) {
@@ -280,7 +280,7 @@ unique_fd create_jdwp_connection_fd(int pid) {
             return unique_fd{fds[0]};
         }
     }
-    LOG(INFO) << D("search failed !!");
+    D("search failed !!");
     return unique_fd{};
 }
 
@@ -309,7 +309,7 @@ static int jdwp_control_init(JdwpControl* control, const char* sockname, int soc
     int pathlen = socknamelen;
 
     if (pathlen >= maxpath) {
-        LOG(INFO) << D("vm debug control socket name too long (%d extra chars)", pathlen + 1 - maxpath);
+        D("vm debug control socket name too long (%d extra chars)", pathlen + 1 - maxpath);
         return -1;
     }
 
@@ -319,33 +319,33 @@ static int jdwp_control_init(JdwpControl* control, const char* sockname, int soc
 
     unique_fd s(socket(AF_UNIX, SOCK_SEQPACKET | SOCK_CLOEXEC, 0));
     if (s < 0) {
-        LOG(INFO) << D("could not create vm debug control socket. %d: %s", errno, strerror(errno));
+        D("could not create vm debug control socket. %d: %s", errno, strerror(errno));
         return -1;
     }
 
     addrlen = pathlen + sizeof(addr.sun_family);
 
     if (bind(s, reinterpret_cast<sockaddr*>(&addr), addrlen) < 0) {
-        LOG(INFO) << D("could not bind vm debug control socket: %d: %s", errno, strerror(errno));
+        D("could not bind vm debug control socket: %d: %s", errno, strerror(errno));
         return -1;
     }
 
     if (listen(s, 4) < 0) {
-        LOG(INFO) << D("listen failed in jdwp control socket: %d: %s", errno, strerror(errno));
+        D("listen failed in jdwp control socket: %d: %s", errno, strerror(errno));
         return -1;
     }
 
     control->listen_socket = s.release();
     control->fde = fdevent_create(control->listen_socket, jdwp_control_event, control);
     if (control->fde == nullptr) {
-        LOG(INFO) << D("could not create fdevent for jdwp control socket");
+        D("could not create fdevent for jdwp control socket");
         return -1;
     }
 
     /* only wait for incoming connections */
     fdevent_add(control->fde, FDE_READ);
 
-    LOG(INFO) << D("jdwp control socket started (%d)", control->listen_socket);
+    D("jdwp control socket started (%d)", control->listen_socket);
     return 0;
 }
 
@@ -358,11 +358,11 @@ static void jdwp_control_event(int fd, unsigned events, void* _control) {
         if (s < 0) {
             if (errno == ECONNABORTED) {
                 /* oops, the JDWP process died really quick */
-                LOG(INFO) << D("oops, the JDWP process died really quick");
+                D("oops, the JDWP process died really quick");
                 return;
             } else {
                 /* the socket is probably closed ? */
-                LOG(INFO) << D("weird accept() failed on jdwp control socket: %s", strerror(errno));
+                D("weird accept() failed on jdwp control socket: %s", strerror(errno));
                 return;
             }
         }
@@ -385,10 +385,10 @@ struct JdwpSocket : public asocket {
 };
 
 static void jdwp_socket_close(asocket* s) {
-    LOG(INFO) << D("LS(%d): closing jdwp socket", s->id);
+    D("LS(%d): closing jdwp socket", s->id);
 
     if (s->peer) {
-        LOG(INFO) << D("LS(%d) peer->close()ing peer->id=%d peer->fd=%d", s->id, s->peer->id, s->peer->fd);
+        D("LS(%d) peer->close()ing peer->id=%d peer->fd=%d", s->id, s->peer->id, s->peer->fd);
         s->peer->peer = nullptr;
         s->peer->close(s->peer);
         s->peer = nullptr;
@@ -400,7 +400,7 @@ static void jdwp_socket_close(asocket* s) {
 
 static int jdwp_socket_enqueue(asocket* s, apacket::payload_type) {
     /* you can't write to this asocket */
-    LOG(INFO) << D("LS(%d): JDWP socket received data?", s->id);
+    D("LS(%d): JDWP socket received data?", s->id);
     s->peer->close(s->peer);
     return -1;
 }
@@ -467,10 +467,10 @@ static void jdwp_process_list_updated(void) {
 }
 
 static void jdwp_tracker_close(asocket* s) {
-    LOG(INFO) << D("LS(%d): destroying jdwp tracker service", s->id);
+    D("LS(%d): destroying jdwp tracker service", s->id);
 
     if (s->peer) {
-        LOG(INFO) << D("LS(%d) peer->close()ing peer->id=%d peer->fd=%d", s->id, s->peer->id, s->peer->fd);
+        D("LS(%d) peer->close()ing peer->id=%d peer->fd=%d", s->id, s->peer->id, s->peer->fd);
         s->peer->peer = nullptr;
         s->peer->close(s->peer);
         s->peer = nullptr;
@@ -497,7 +497,7 @@ static void jdwp_tracker_ready(asocket* s) {
 
 static int jdwp_tracker_enqueue(asocket* s, apacket::payload_type) {
     /* you can't write to this socket */
-    LOG(INFO) << D("LS(%d): JDWP tracker received data?", s->id);
+    D("LS(%d): JDWP tracker received data?", s->id);
     s->peer->close(s->peer);
     return -1;
 }
@@ -511,7 +511,7 @@ asocket* create_jdwp_tracker_service_socket(void) {
     memset(t.get(), 0, sizeof(asocket));
 
     install_local_socket(t.get());
-    LOG(INFO) << D("LS(%d): created new jdwp tracker service", t->id);
+    D("LS(%d): created new jdwp tracker service", t->id);
 
     t->ready = jdwp_tracker_ready;
     t->enqueue = jdwp_tracker_enqueue;
